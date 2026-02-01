@@ -1,0 +1,226 @@
+# Guía de Pruebas - Cash Vouchers Manager API
+
+Esta guía proporciona ejemplos de cómo probar cada endpoint de la API usando PowerShell.
+
+## Requisitos previos
+
+1. La API debe estar ejecutándose en http://localhost:5000
+2. Ejecutar desde PowerShell o PowerShell Core
+
+## 1. Generar un nuevo vale
+
+Crea un vale nuevo con código EAN13 único.
+
+```powershell
+$body = @{
+    amount = 50.00
+    issuingStoreId = 1234
+    expirationDate = '2026-12-31T23:59:59Z'
+    issuingSaleId = 'SALE-123'
+} | ConvertTo-Json
+
+$response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GenerateCashVoucher' `
+    -Method POST `
+    -Body $body `
+    -ContentType 'application/json' `
+    -UseBasicParsing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+**Respuesta esperada:**
+```
+Code            : 1234XXXXXXXX (13 dígitos EAN13)
+Amount          : 50.00
+CreationDate    : 2026-02-01T...
+IssuingStoreId  : 1234
+RedemptionDate  : 
+ExpirationDate  : 2026-12-31T23:59:59Z
+IssuingSaleId   : SALE-123
+RedemptionSaleId: 
+Status          : Active
+```
+
+## 2. Obtener vale por código
+
+Obtiene todos los vales con un código específico. Guarda el código del vale generado en el paso anterior.
+
+```powershell
+# Reemplaza XXXXXXXXXXXXX con el código del vale generado
+$code = '1234XXXXXXXXX'
+
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code" `
+    -Method GET `
+    -UseBasicParsing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+### Solo vales activos (por defecto)
+
+```powershell
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code?onlyActives=true" `
+    -Method GET `
+    -UseBasicParsing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+### Todos los vales (activos e inactivos)
+
+```powershell
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code?onlyActives=false" `
+    -Method GET `
+    -UseBasicParsing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+## 3. Obtener vales filtrados
+
+### Filtrar por estado (Active)
+
+```powershell
+$response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GetFilteredCashVouchers?status=0' `
+    -Method GET `
+    -UseBasicParsing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+### Filtrar por establecimiento emisor
+
+```powershell
+$response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GetFilteredCashVouchers?issuingStoreId=1234' `
+    -Method GET `
+    -UseBasicParsing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+### Filtrar por rango de fechas de creación
+
+```powershell
+$dateFrom = '2026-01-01T00:00:00Z'
+$dateTo = '2026-12-31T23:59:59Z'
+
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetFilteredCashVouchers?dateFrom=$dateFrom&dateTo=$dateTo&dateType=0" `
+    -Method GET `
+    -UseBasicParsing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+### Filtros combinados
+
+```powershell
+$response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GetFilteredCashVouchers?status=0&issuingStoreId=1234' `
+    -Method GET `
+    -UseBasicParsing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+## 4. Canjear vale
+
+Canjea todos los vales activos con un código específico.
+
+```powershell
+# Reemplaza XXXXXXXXXXXXX con el código del vale a canjear
+$code = '1234XXXXXXXXX'
+
+$body = @{
+    redemptionDate = '2026-02-01T15:30:00Z'
+    redemptionSaleId = 'REDEMPTION-456'
+} | ConvertTo-Json
+
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/RedeemCashVoucher/$code" `
+    -Method PUT `
+    -Body $body `
+    -ContentType 'application/json' `
+    -UseBasicParsing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+### Canjear sin especificar fecha (usa fecha actual UTC)
+
+```powershell
+$body = @{
+    redemptionSaleId = 'REDEMPTION-789'
+} | ConvertTo-Json
+
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/RedeemCashVoucher/$code" `
+    -Method PUT `
+    -Body $body `
+    -ContentType 'application/json' `
+    -UseBasicParsing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+## Valores de enumeraciones
+
+### CashVoucherStatusEnum
+- `0` = Active
+- `1` = Redeemed
+- `2` = Expired
+
+### CashVoucherDateTypeEnum
+- `0` = Creation
+- `1` = Redemption
+- `2` = Expiration
+
+## Script completo de prueba
+
+```powershell
+# Script de prueba completo
+Write-Host "=== 1. Generando vale ===" -ForegroundColor Green
+$body = @{
+    amount = 50.00
+    issuingStoreId = 1234
+    expirationDate = '2026-12-31T23:59:59Z'
+    issuingSaleId = 'SALE-123'
+} | ConvertTo-Json
+
+$response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GenerateCashVoucher' `
+    -Method POST -Body $body -ContentType 'application/json' -UseBasicParsing
+$voucher = $response.Content | ConvertFrom-Json
+$code = $voucher.Code
+Write-Host "Vale generado con código: $code" -ForegroundColor Yellow
+$voucher | Format-List
+
+Write-Host "`n=== 2. Consultando vale por código ===" -ForegroundColor Green
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code" `
+    -Method GET -UseBasicParsing
+$response.Content | ConvertFrom-Json | Format-List
+
+Write-Host "`n=== 3. Filtrando vales activos ===" -ForegroundColor Green
+$response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GetFilteredCashVouchers?status=0' `
+    -Method GET -UseBasicParsing
+$vouchers = $response.Content | ConvertFrom-Json
+Write-Host "Vales activos encontrados: $($vouchers.Count)" -ForegroundColor Yellow
+
+Write-Host "`n=== 4. Canjeando vale ===" -ForegroundColor Green
+$body = @{
+    redemptionSaleId = 'REDEMPTION-456'
+} | ConvertTo-Json
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/RedeemCashVoucher/$code" `
+    -Method PUT -Body $body -ContentType 'application/json' -UseBasicParsing
+$response.Content | ConvertFrom-Json | Format-List
+
+Write-Host "`n=== 5. Verificando estado después del canje ===" -ForegroundColor Green
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code?onlyActives=false" `
+    -Method GET -UseBasicParsing
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+## Acceso a Swagger UI
+
+La documentación interactiva de la API está disponible en:
+- http://localhost:5000/swagger (cuando la API se ejecuta en modo Development)
+
+Para ejecutar en modo Development:
+```powershell
+dotnet run --project .\CashVouchersManager.API\CashVouchersManager.API.csproj --environment Development
+```

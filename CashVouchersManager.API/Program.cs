@@ -142,17 +142,17 @@ try
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    // Enable CORS
+    // IMPORTANT: CORS must be before authentication to add headers to all responses
     app.UseCors();
 
-    // Use Basic Authentication middleware
-    app.UseMiddleware<BasicAuthenticationMiddleware>();
-
-    // Use HTTPS redirection if configured
+    // Use HTTPS redirection if configured (before auth)
     if (appSettings.UseHttpsRedirection)
     {
         app.UseHttpsRedirection();
     }
+
+    // Use Basic Authentication middleware
+    app.UseMiddleware<BasicAuthenticationMiddleware>();
 
     app.UseAuthorization();
     app.MapControllers();

@@ -11,6 +11,7 @@ El proyecto sigue una arquitectura DDD limpia con los siguientes proyectos:
 - **CashVouchersManager.Infrastructure**: Implementación de persistencia con Entity Framework Core
 - **CashVouchersManager.Application**: Servicios de aplicación y lógica de negocio
 - **CashVouchersManager.API**: API Web con controladores ASP.NET Core
+- **CashVouchersManager.Tests**: Tests unitarios con xUnit
 
 ## Requisitos
 
@@ -39,6 +40,20 @@ La API estará disponible en:
 - http://localhost:5000
 
 **Swagger UI** estará disponible en: http://localhost:5000/swagger
+
+## Tests Unitarios
+
+El proyecto incluye 37 tests unitarios que validan todas las reglas de negocio.
+
+```bash
+# Ejecutar todos los tests
+dotnet test
+
+# Ejecutar con más detalle
+dotnet test --verbosity normal
+```
+
+Para más información sobre los tests, consulta [TESTING_GUIDE.md](TESTING_GUIDE.md).
 
 ## Base de datos
 

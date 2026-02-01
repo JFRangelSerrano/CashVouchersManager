@@ -1,6 +1,54 @@
 # Guía de Pruebas - Cash Vouchers Manager API
 
-Esta guía proporciona ejemplos de cómo probar cada endpoint de la API usando PowerShell.
+Esta guía proporciona ejemplos de cómo probar la API y ejecutar los tests unitarios.
+
+## Tests Unitarios
+
+El proyecto incluye un conjunto completo de tests unitarios usando xUnit que validan todas las reglas de negocio.
+
+### Ejecutar todos los tests
+
+```powershell
+dotnet test
+```
+
+### Ejecutar tests con más detalle
+
+```powershell
+dotnet test --verbosity normal
+```
+
+### Cobertura de tests
+
+Los tests cubren:
+
+1. **VoucherCodeGeneratorTests**: Generación de códigos EAN13
+   - Formato correcto (13 dígitos)
+   - Código comienza con ID de establecimiento
+   - Dígito de control válido
+   - Unicidad de códigos generados
+
+2. **CashVoucherStatusTests**: Estados calculados de vales
+   - Estado Active cuando no está canjeado ni expirado
+   - Estado Redeemed cuando está canjeado
+   - Estado Expired cuando ha expirado
+   - Precedencia de Redeemed sobre Expired
+
+3. **CashVoucherRepositoryTests**: Operaciones de persistencia
+   - Inserción y consulta de vales
+   - Filtrado por código con/sin vales activos
+   - Filtrado por estado, establecimiento y fechas
+   - Actualización de vales
+   - Validación de disponibilidad de códigos (regla de 30 días)
+
+4. **CashVoucherServiceTests**: Lógica de aplicación
+   - Generación de vales con códigos únicos
+   - Consulta de vales por código
+   - Filtrado dinámico de vales
+   - Canje de vales activos
+   - Manejo correcto de fechas UTC
+
+## Pruebas de API
 
 ## Requisitos previos
 

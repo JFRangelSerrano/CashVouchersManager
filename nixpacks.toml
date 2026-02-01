@@ -3,7 +3,7 @@ nixPkgs = ["dotnet-sdk_8"]
 
 [phases.build]
 cmds = [
-    "dotnet publish CashVouchersManager.API/CashVouchersManager.API.csproj -c Release -o /app/out --self-contained false --runtime linux-x64"
+    "dotnet publish CashVouchersManager.API/CashVouchersManager.API.csproj -c Release -o /app/out --self-contained true --runtime linux-x64 /p:PublishSingleFile=false"
 ]
 
 [start]

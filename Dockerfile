@@ -1,5 +1,5 @@
-# Use .NET 8 SDK for build (latest patch version)
-FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
+# Use .NET 9 SDK for build (to avoid NullableAttribute compatibility issues)
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy csproj files and restore
@@ -20,7 +20,7 @@ RUN dotnet publish "CashVouchersManager.API.csproj" -c Release -o /app/publish \
     /p:PublishReadyToRun=false \
     /p:PublishSingleFile=false
 
-# Use .NET 8 Runtime for final image (latest patch version)
+# Use .NET 8 Runtime for final image (target framework is still net8.0)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-jammy
 WORKDIR /app
 COPY --from=build /app/publish .

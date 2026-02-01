@@ -100,7 +100,9 @@ public class CashVoucherController : ControllerBase
     }
 
     /// <summary>
-    /// Sets the InUse flag for all vouchers with the specified code
+    /// Sets the InUse flag for vouchers with the specified code
+    /// When InUse is true: only updates non-redeemed, non-expired vouchers
+    /// When InUse is false: updates all vouchers with the code
     /// </summary>
     /// <param name="code">The voucher code</param>
     /// <param name="request">The request data with the InUse value</param>
@@ -110,20 +112,13 @@ public class CashVoucherController : ControllerBase
         string code,
         [FromBody] SetInUseRequestDTO request)
     {
-        try
+        var result = await _cashVoucherService.SetCashVouchersInUseAsync(code, request.InUse);
+        
+        if (result.Count == 0)
         {
-            var result = await _cashVoucherService.SetCashVouchersInUseAsync(code, request.InUse);
-            
-            if (result.Count == 0)
-            {
-                return NotFound(new { message = "No vouchers found with the specified code" });
-            }
-            
-            return Ok(result);
+            return NotFound(new { message = "No vouchers found with the specified code" });
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+            
+        return Ok(result);
     }
 }

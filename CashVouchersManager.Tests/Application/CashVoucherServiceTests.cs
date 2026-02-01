@@ -341,60 +341,49 @@ public class CashVoucherServiceTests : IDisposable
     }
 
     /// <summary>
-    /// Tests that SetCashVouchersInUseAsync sets InUse flag for all vouchers with the code
+    /// Tests that SetCashVouchersInUseAsync only sets InUse for active vouchers when setting to true
     /// </summary>
     [Fact]
-    public async Task SetCashVouchersInUseAsync_ShouldSetInUseFlag()
-    {
-        // Arrange
-        var request = new GenerateCashVoucherRequestDTO
-        {
-            Amount = 50.00m,
-            IssuingStoreId = 1234
-        };
-        var voucher = await _service.GenerateCashVoucherAsync(request);
-
-        // Act
-        var result = await _service.SetCashVouchersInUseAsync(voucher.Code, true);
-
-        // Assert
-        Assert.Single(result);
-        Assert.True(result[0].InUse);
-        Assert.Equal(CashVoucherStatusEnum.InUse, result[0].Status);
-    }
-
-    /// <summary>
-    /// Tests that SetCashVouchersInUseAsync can unset InUse flag
-    /// </summary>
-    [Fact]
-    public async Task SetCashVouchersInUseAsync_ShouldUnsetInUseFlag()
+    public async Task SetCashVouchersInUseAsync_WithTrue_ShouldOnlyUpdateActiveVouchers()
     {
         // Arrange
         string code = "1234567890123";
-        await SeedVoucherAsync(code, isRedeemed: false, isExpired: false, inUse: true);
+        await SeedVoucherAsync(code, isRedeemed: false, isExpired: false, inUse: false); // Active
+        await SeedVoucherAsync(code, isRedeemed: true, isExpired: false, inUse: false);  // Redeemed
+
+        // Act
+        var result = await _service.SetCashVouchersInUseAsync(code, true);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        
+        var activeVoucher = result.FirstOrDefault(v => v.Status == CashVoucherStatusEnum.InUse);
+        var redeemedVoucher = result.FirstOrDefault(v => v.Status == CashVoucherStatusEnum.Redeemed);
+
+        Assert.NotNull(activeVoucher);
+        Assert.True(activeVoucher.InUse);
+        
+        Assert.NotNull(redeemedVoucher);
+        Assert.False(redeemedVoucher.InUse);
+    }
+
+    /// <summary>
+    /// Tests that SetCashVouchersInUseAsync with false updates all vouchers
+    /// </summary>
+    [Fact]
+    public async Task SetCashVouchersInUseAsync_WithFalse_ShouldUpdateAllVouchers()
+    {
+        // Arrange
+        string code = "1234567890123";
+        await SeedVoucherAsync(code, isRedeemed: false, isExpired: false, inUse: true); // Active
+        await SeedVoucherAsync(code, isRedeemed: true, isExpired: false, inUse: true);  // Redeemed
 
         // Act
         var result = await _service.SetCashVouchersInUseAsync(code, false);
 
         // Assert
-        Assert.Single(result);
-        Assert.False(result[0].InUse);
-        Assert.Equal(CashVoucherStatusEnum.Active, result[0].Status);
-    }
-
-    /// <summary>
-    /// Tests that SetCashVouchersInUseAsync throws exception for redeemed vouchers
-    /// </summary>
-    [Fact]
-    public async Task SetCashVouchersInUseAsync_ShouldThrowException_ForRedeemedVouchers()
-    {
-        // Arrange
-        string code = "1234567890123";
-        await SeedVoucherAsync(code, isRedeemed: true, isExpired: false, inUse: false);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await _service.SetCashVouchersInUseAsync(code, true));
+        Assert.Equal(2, result.Count);
+        Assert.All(result, v => Assert.False(v.InUse));
     }
 
     /// <summary>

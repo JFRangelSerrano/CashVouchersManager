@@ -201,7 +201,9 @@ public class CashVoucherRepository : ICashVoucherRepository
     }
 
     /// <summary>
-    /// Sets the InUse flag for all vouchers with the specified code
+    /// Sets the InUse flag for vouchers matching the specified code
+    /// When inUse is true: only updates vouchers that are not redeemed and not expired
+    /// When inUse is false: updates all vouchers with the code
     /// </summary>
     /// <param name="code">The voucher code</param>
     /// <param name="inUse">The value to set for InUse flag</param>
@@ -218,32 +220,33 @@ public class CashVoucherRepository : ICashVoucherRepository
         if (vouchers.Count == 0)
             return new List<CashVoucher>();
 
-        // If setting to true, validate that vouchers can be set to InUse
-        if (inUse)
-        {
-            var invalidVouchers = vouchers.Where(v =>
-                v.RedemptionDate != null ||
-                (v.ExpirationDate != null && v.ExpirationDate < utcNow))
-                .ToList();
-
-            if (invalidVouchers.Any())
-            {
-                throw new InvalidOperationException(
-                    "Cannot set InUse=true for vouchers that are redeemed or expired");
-            }
-        }
-
         // Use transaction for consistency
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            // Update InUse flag using raw SQL
-            await _context.Database.ExecuteSqlRawAsync(
-                @"UPDATE CashVouchers 
-                SET InUse = {0}
-                WHERE Code = {1}",
-                inUse,
-                code);
+            if (inUse)
+            {
+                // When setting to true, only update vouchers that are not redeemed and not expired
+                await _context.Database.ExecuteSqlRawAsync(
+                    @"UPDATE CashVouchers 
+                    SET InUse = {0}
+                    WHERE Code = {1}
+                    AND RedemptionDate IS NULL
+                    AND (ExpirationDate IS NULL OR ExpirationDate >= {2})",
+                    inUse,
+                    code,
+                    utcNow);
+            }
+            else
+            {
+                // When setting to false, update all vouchers with the code
+                await _context.Database.ExecuteSqlRawAsync(
+                    @"UPDATE CashVouchers 
+                    SET InUse = {0}
+                    WHERE Code = {1}",
+                    inUse,
+                    code);
+            }
 
             await transaction.CommitAsync();
 

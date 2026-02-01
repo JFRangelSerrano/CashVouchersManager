@@ -67,57 +67,56 @@ public class CashVoucherInUseTests : IDisposable
     }
 
     /// <summary>
-    /// Tests that SetInUseAsync affects all vouchers with the same code
+    /// Tests that SetInUseAsync only sets InUse=true for non-redeemed, non-expired vouchers
     /// </summary>
     [Fact]
-    public async Task SetInUseAsync_ShouldAffectAllVouchersWithSameCode()
+    public async Task SetInUseAsync_WithTrue_ShouldOnlyUpdateActiveVouchers()
     {
         // Arrange
         string code = "1234567890123";
-        await SeedVoucherAsync(code, isRedeemed: false, isExpired: false, inUse: false);
-        await SeedVoucherAsync(code, isRedeemed: false, isExpired: false, inUse: false);
-        await SeedVoucherAsync(code, isRedeemed: false, isExpired: false, inUse: false);
+        await SeedVoucherAsync(code, isRedeemed: false, isExpired: false, inUse: false); // Active - should be updated
+        await SeedVoucherAsync(code, isRedeemed: true, isExpired: false, inUse: false);  // Redeemed - should NOT be updated
+        await SeedVoucherAsync(code, isRedeemed: false, isExpired: true, inUse: false);  // Expired - should NOT be updated
 
         // Act
         var result = await _repository.SetInUseAsync(code, true);
 
         // Assert
         Assert.Equal(3, result.Count);
-        Assert.All(result, v => Assert.True(v.InUse));
+        
+        // Only the active voucher should have InUse=true
+        var activeVoucher = result.FirstOrDefault(v => v.RedemptionDate == null && v.ExpirationDate > DateTime.UtcNow);
+        var redeemedVoucher = result.FirstOrDefault(v => v.RedemptionDate != null);
+        var expiredVoucher = result.FirstOrDefault(v => v.RedemptionDate == null && v.ExpirationDate <= DateTime.UtcNow);
+
+        Assert.NotNull(activeVoucher);
+        Assert.True(activeVoucher.InUse);
+        
+        Assert.NotNull(redeemedVoucher);
+        Assert.False(redeemedVoucher.InUse); // Should remain false
+        
+        Assert.NotNull(expiredVoucher);
+        Assert.False(expiredVoucher.InUse); // Should remain false
     }
 
     /// <summary>
-    /// Tests that SetInUseAsync throws exception when trying to set InUse=true for redeemed vouchers
+    /// Tests that SetInUseAsync with false updates all vouchers regardless of status
     /// </summary>
     [Fact]
-    public async Task SetInUseAsync_ShouldThrowException_WhenSettingTrueForRedeemedVoucher()
+    public async Task SetInUseAsync_WithFalse_ShouldUpdateAllVouchers()
     {
         // Arrange
         string code = "1234567890123";
-        await SeedVoucherAsync(code, isRedeemed: true, isExpired: false, inUse: false);
+        await SeedVoucherAsync(code, isRedeemed: false, isExpired: false, inUse: true); // Active
+        await SeedVoucherAsync(code, isRedeemed: true, isExpired: false, inUse: true);  // Redeemed
+        await SeedVoucherAsync(code, isRedeemed: false, isExpired: true, inUse: true);  // Expired
 
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await _repository.SetInUseAsync(code, true));
+        // Act
+        var result = await _repository.SetInUseAsync(code, false);
 
-        Assert.Contains("Cannot set InUse=true for vouchers that are redeemed or expired", exception.Message);
-    }
-
-    /// <summary>
-    /// Tests that SetInUseAsync throws exception when trying to set InUse=true for expired vouchers
-    /// </summary>
-    [Fact]
-    public async Task SetInUseAsync_ShouldThrowException_WhenSettingTrueForExpiredVoucher()
-    {
-        // Arrange
-        string code = "1234567890123";
-        await SeedVoucherAsync(code, isRedeemed: false, isExpired: true, inUse: false);
-
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await _repository.SetInUseAsync(code, true));
-
-        Assert.Contains("Cannot set InUse=true for vouchers that are redeemed or expired", exception.Message);
+        // Assert
+        Assert.Equal(3, result.Count);
+        Assert.All(result, v => Assert.False(v.InUse));
     }
 
     /// <summary>

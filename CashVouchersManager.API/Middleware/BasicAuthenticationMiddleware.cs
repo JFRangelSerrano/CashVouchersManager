@@ -101,7 +101,24 @@ public class BasicAuthenticationMiddleware
     private static async Task ChallengeAsync(HttpContext context)
     {
         context.Response.StatusCode = 401;
-        context.Response.Headers["WWW-Authenticate"] = "Basic realm=\"CashVouchersManager API\"";
-        await context.Response.WriteAsync("Unauthorized");
+        
+        // Check if request comes from a browser/Swagger UI
+        // If so, don't send WWW-Authenticate header to avoid browser's native auth popup
+        var userAgent = context.Request.Headers["User-Agent"].ToString();
+        var isBrowserRequest = !string.IsNullOrEmpty(userAgent) && 
+                               (userAgent.Contains("Mozilla", StringComparison.OrdinalIgnoreCase) ||
+                                userAgent.Contains("Chrome", StringComparison.OrdinalIgnoreCase) ||
+                                userAgent.Contains("Safari", StringComparison.OrdinalIgnoreCase) ||
+                                userAgent.Contains("Edge", StringComparison.OrdinalIgnoreCase) ||
+                                userAgent.Contains("Firefox", StringComparison.OrdinalIgnoreCase));
+        
+        // Only send WWW-Authenticate for non-browser clients (API clients, curl, etc.)
+        if (!isBrowserRequest)
+        {
+            context.Response.Headers["WWW-Authenticate"] = "Basic realm=\"CashVouchersManager API\"";
+        }
+        
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync("{\"error\":\"Unauthorized\",\"message\":\"Authentication required. Use Basic Authentication with valid credentials.\"}");
     }
 }

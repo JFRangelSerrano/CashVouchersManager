@@ -322,8 +322,8 @@ Railway free tier incluye:
 2. ✅ Tu proyecto ya incluye `global.json` que especifica .NET 8.0
 3. Haz commit de estos archivos:
    ```powershell
-   git add nixpacks.toml global.json railway.json
-   git commit -m "Add .NET 8 configuration for Railway"
+   git add nixpacks.toml global.json railway.json Program.cs
+   git commit -m "Fix: Railway deployment with .NET 8 and proper port configuration"
    git push
    ```
 4. Railway detectará el push y volverá a desplegar automáticamente
@@ -334,6 +334,35 @@ Railway free tier incluye:
 2. Busca `nixpacks.toml` en la raíz
 3. Busca `global.json` en la raíz
 4. Si no están, agrégalos y haz push de nuevo
+
+### Error: "Application crashed" después de desplegar
+
+**Causa**: La aplicación no está escuchando en el puerto correcto o en la interfaz correcta para Railway.
+
+**Solución** (YA IMPLEMENTADA):
+1. ✅ `Program.cs` ya está configurado para:
+   - Leer el puerto de la variable de entorno `PORT` (Railway lo establece automáticamente)
+   - Escuchar en `0.0.0.0` en producción (necesario para Railway)
+   - Escuchar en `localhost` en desarrollo (para tu máquina local)
+2. ✅ La base de datos SQLite se crea en `/data` en producción (compatible con volúmenes de Railway)
+3. ✅ Los logs ahora muestran información de inicio detallada
+
+**Si ya desplegaste antes de estos cambios**:
+```powershell
+# Hacer commit de los cambios en Program.cs
+git add CashVouchersManager.API/Program.cs
+git commit -m "Fix: Configure proper host and port for Railway"
+git push
+```
+
+**Verificar en los logs de Railway** que ahora veas:
+```
+info: Starting Cash Vouchers Manager API
+info: Environment: Production
+info: Listening on: http://0.0.0.0:XXXX
+info: Database path: /data/CashVouchers.db
+info: Now listening on: http://0.0.0.0:XXXX
+```
 
 ### Error: "Build failed"
 

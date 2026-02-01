@@ -98,12 +98,18 @@ Canjea todos los vales activos con el código especificado.
 
 ## Reglas de negocio
 
-Un vale es considerado **inactivo** si:
-- Está canjeado, O
+### Disponibilidad de códigos para generación
+
+Un vale es considerado **inactivo** (su código está disponible para ser reutilizado) si:
+- Está canjeado (independientemente del tiempo que lleve canjeado), O
 - Está caducado desde hace más de 30 días
 
-Un vale activo puede tener uno de estos estados:
-- **Active**: No está canjeado ni caducado
+Al generar un nuevo vale, el sistema garantiza que el código EAN13 generado no exista en ningún vale activo.
+
+### Estados de los vales
+
+Un vale puede tener uno de estos estados calculados:
+- **Active**: No está canjeado y no ha expirado (o lleva expirado menos de 30 días)
 - **Redeemed**: Ha sido canjeado
 - **Expired**: Ha pasado su fecha de expiración
 

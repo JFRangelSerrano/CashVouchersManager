@@ -18,5 +18,10 @@ public enum CashVoucherStatusEnum
     /// <summary>
     /// The voucher has expired
     /// </summary>
-    Expired
+    Expired,
+
+    /// <summary>
+    /// The voucher is currently in use
+    /// </summary>
+    InUse
 }

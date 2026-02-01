@@ -49,6 +49,11 @@ public class CashVoucher
     public string? RedemptionSaleId { get; set; }
 
     /// <summary>
+    /// Indicates if the voucher is currently in use
+    /// </summary>
+    public bool InUse { get; set; }
+
+    /// <summary>
     /// Gets the calculated status of the voucher based on its properties
     /// </summary>
     public CashVoucherStatusEnum Status
@@ -60,6 +65,9 @@ public class CashVoucher
 
             if (ExpirationDate.HasValue && ExpirationDate.Value < DateTime.UtcNow)
                 return CashVoucherStatusEnum.Expired;
+
+            if (InUse)
+                return CashVoucherStatusEnum.InUse;
 
             return CashVoucherStatusEnum.Active;
         }

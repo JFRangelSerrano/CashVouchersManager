@@ -317,17 +317,100 @@ public class CashVoucherServiceTests : IDisposable
     }
 
     /// <summary>
+    /// Tests that RedeemCashVoucherAsync sets InUse to false after redemption
+    /// </summary>
+    [Fact]
+    public async Task RedeemCashVoucherAsync_ShouldSetInUseToFalse()
+    {
+        // Arrange
+        string code = "1234567890123";
+        await SeedVoucherAsync(code, isRedeemed: false, isExpired: false, inUse: true);
+
+        var redeemRequest = new RedeemCashVoucherRequestDTO
+        {
+            RedemptionSaleId = "REDEMPTION-001"
+        };
+
+        // Act
+        var redeemedVouchers = await _service.RedeemCashVoucherAsync(code, redeemRequest);
+
+        // Assert
+        Assert.Single(redeemedVouchers);
+        Assert.False(redeemedVouchers[0].InUse);
+        Assert.Equal(CashVoucherStatusEnum.Redeemed, redeemedVouchers[0].Status);
+    }
+
+    /// <summary>
+    /// Tests that SetCashVouchersInUseAsync sets InUse flag for all vouchers with the code
+    /// </summary>
+    [Fact]
+    public async Task SetCashVouchersInUseAsync_ShouldSetInUseFlag()
+    {
+        // Arrange
+        var request = new GenerateCashVoucherRequestDTO
+        {
+            Amount = 50.00m,
+            IssuingStoreId = 1234
+        };
+        var voucher = await _service.GenerateCashVoucherAsync(request);
+
+        // Act
+        var result = await _service.SetCashVouchersInUseAsync(voucher.Code, true);
+
+        // Assert
+        Assert.Single(result);
+        Assert.True(result[0].InUse);
+        Assert.Equal(CashVoucherStatusEnum.InUse, result[0].Status);
+    }
+
+    /// <summary>
+    /// Tests that SetCashVouchersInUseAsync can unset InUse flag
+    /// </summary>
+    [Fact]
+    public async Task SetCashVouchersInUseAsync_ShouldUnsetInUseFlag()
+    {
+        // Arrange
+        string code = "1234567890123";
+        await SeedVoucherAsync(code, isRedeemed: false, isExpired: false, inUse: true);
+
+        // Act
+        var result = await _service.SetCashVouchersInUseAsync(code, false);
+
+        // Assert
+        Assert.Single(result);
+        Assert.False(result[0].InUse);
+        Assert.Equal(CashVoucherStatusEnum.Active, result[0].Status);
+    }
+
+    /// <summary>
+    /// Tests that SetCashVouchersInUseAsync throws exception for redeemed vouchers
+    /// </summary>
+    [Fact]
+    public async Task SetCashVouchersInUseAsync_ShouldThrowException_ForRedeemedVouchers()
+    {
+        // Arrange
+        string code = "1234567890123";
+        await SeedVoucherAsync(code, isRedeemed: true, isExpired: false, inUse: false);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await _service.SetCashVouchersInUseAsync(code, true));
+    }
+
+    /// <summary>
     /// Seeds a voucher into the database using raw SQL
     /// </summary>
     /// <param name="code">The voucher code</param>
     /// <param name="isRedeemed">Whether the voucher is redeemed</param>
     /// <param name="isExpired">Whether the voucher is expired</param>
     /// <param name="storeId">The issuing store ID</param>
+    /// <param name="inUse">Whether the voucher is in use</param>
     private async Task SeedVoucherAsync(
         string code,
         bool isRedeemed,
         bool isExpired,
-        int storeId = 1234)
+        int storeId = 1234,
+        bool inUse = false)
     {
         var creation = DateTime.UtcNow;
         var redemption = isRedeemed ? DateTime.UtcNow.AddDays(-5) : (DateTime?)null;
@@ -335,9 +418,9 @@ public class CashVoucherServiceTests : IDisposable
 
         await _context.Database.ExecuteSqlRawAsync(
             @"INSERT INTO CashVouchers 
-            (Code, Amount, CreationDate, IssuingStoreId, RedemptionDate, ExpirationDate, IssuingSaleId, RedemptionSaleId) 
-            VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7})",
-            code, 50.00m, creation, storeId, redemption!, expiration!, null!, null!);
+            (Code, Amount, CreationDate, IssuingStoreId, RedemptionDate, ExpirationDate, IssuingSaleId, RedemptionSaleId, InUse) 
+            VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})",
+            code, 50.00m, creation, storeId, redemption!, expiration!, null!, null!, inUse);
     }
 
     /// <summary>

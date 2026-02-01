@@ -98,4 +98,32 @@ public class CashVoucherController : ControllerBase
         
         return Ok(result);
     }
+
+    /// <summary>
+    /// Sets the InUse flag for all vouchers with the specified code
+    /// </summary>
+    /// <param name="code">The voucher code</param>
+    /// <param name="request">The request data with the InUse value</param>
+    /// <returns>A list of updated cash vouchers</returns>
+    [HttpPost("SetCashVouchersInUse/{code}")]
+    public async Task<ActionResult<List<CashVoucherDTO>>> SetCashVouchersInUse(
+        string code,
+        [FromBody] SetInUseRequestDTO request)
+    {
+        try
+        {
+            var result = await _cashVoucherService.SetCashVouchersInUseAsync(code, request.InUse);
+            
+            if (result.Count == 0)
+            {
+                return NotFound(new { message = "No vouchers found with the specified code" });
+            }
+            
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

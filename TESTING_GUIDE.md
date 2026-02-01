@@ -33,6 +33,9 @@ Los tests cubren:
    - Estado Redeemed cuando está canjeado
    - Estado Expired cuando ha expirado
    - Precedencia de Redeemed sobre Expired
+   - **Precedencia de InUse en estados**
+   - **InUse tiene precedencia sobre Active**
+   - **Redeemed tiene precedencia sobre InUse**
 
 3. **CashVoucherRepositoryTests**: Operaciones de persistencia
    - Inserción y consulta de vales
@@ -41,12 +44,23 @@ Los tests cubren:
    - Actualización de vales
    - Validación de disponibilidad de códigos (regla de 30 días)
 
-4. **CashVoucherServiceTests**: Lógica de aplicación
+4. **CashVoucherInUseTests**: Operaciones con la propiedad InUse
+   - **Establecer InUse en vales activos**
+   - **Quitar InUse de vales**
+   - **Validación de que InUse no se puede establecer en vales canjeados**
+   - **Validación de que InUse no se puede establecer en vales expirados**
+   - **Operaciones transaccionales con múltiples vales**
+   - **GetAllByCodeAsync retorna todos los vales**
+
+5. **CashVoucherServiceTests**: Lógica de aplicación
    - Generación de vales con códigos únicos
    - Consulta de vales por código
    - Filtrado dinámico de vales
    - Canje de vales activos
    - Manejo correcto de fechas UTC
+   - **SetCashVouchersInUseAsync establece y quita la marca InUse**
+   - **RedeemCashVoucherAsync establece InUse=false automáticamente**
+   - **Validación de excepciones al intentar establecer InUse en vales canjeados**
 
 ## Pruebas de API
 
@@ -169,9 +183,66 @@ $response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GetFilteredCashVou
 $response.Content | ConvertFrom-Json | Format-List
 ```
 
-## 4. Canjear vale
+## 4. Establecer/Quitar marca InUse
 
-Canjea todos los vales activos con un código específico.
+Marca vales como "en uso" para control de concurrencia durante procesos de canje.
+
+### Establecer InUse=true
+
+```powershell
+# Reemplaza XXXXXXXXXXXXX con el código del vale
+$code = '1234XXXXXXXXX'
+
+$body = @{
+    inUse = $true
+} | ConvertTo-Json
+
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/SetCashVouchersInUse/$code" `
+    -Method POST `
+    -Body $body `
+    -ContentType 'application/json' `
+    -UseBasicParsing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+**Respuesta esperada:**
+```
+Code            : 1234XXXXXXXX
+Amount          : 50.00
+...
+InUse           : True
+Status          : InUse
+```
+
+### Quitar InUse (establecer en false)
+
+```powershell
+$body = @{
+    inUse = $false
+} | ConvertTo-Json
+
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/SetCashVouchersInUse/$code" `
+    -Method POST `
+    -Body $body `
+    -ContentType 'application/json' `
+    -UseBasicPa
+- `3` = InUse
+
+**Precedencia de estados:**
+1. Redeemed (máxima precedencia)
+2. Expired
+3. InUse
+4. Activersing
+
+$response.Content | ConvertFrom-Json | Format-List
+```
+
+**Nota:** No se puede establecer InUse=true en vales canjeados o expirados. Intentarlo resultará en un error HTTP 400.
+
+## 5. Canjear vale
+
+Canjea todos los vales activos con un código específico. El canje automáticamente establece InUse=false.
 
 ```powershell
 # Reemplaza XXXXXXXXXXXXX con el código del vale a canjear
@@ -215,14 +286,7 @@ $response.Content | ConvertFrom-Json | Format-List
 - `2` = Expired
 
 ### CashVoucherDateTypeEnum
-- `0` = Creation
-- `1` = Redemption
-- `2` = Expiration
-
-## Script completo de prueba
-
-```powershell
-# Script de prueba completo
+- `0` = Creation con control de concurrencia InUse
 Write-Host "=== 1. Generando vale ===" -ForegroundColor Green
 $body = @{
     amount = 50.00
@@ -243,17 +307,34 @@ $response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCo
     -Method GET -UseBasicParsing
 $response.Content | ConvertFrom-Json | Format-List
 
-Write-Host "`n=== 3. Filtrando vales activos ===" -ForegroundColor Green
+Write-Host "`n=== 3. Marcando vale como InUse ===" -ForegroundColor Green
+$body = @{ inUse = $true } | ConvertTo-Json
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/SetCashVouchersInUse/$code" `
+    -Method POST -Body $body -ContentType 'application/json' -UseBasicParsing
+$voucher = $response.Content | ConvertFrom-Json
+Write-Host "Estado después de SetInUse: $($voucher.Status)" -ForegroundColor Yellow
+$voucher | Format-List
+
+Write-Host "`n=== 4. Filtrando vales activos ===" -ForegroundColor Green
 $response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GetFilteredCashVouchers?status=0' `
     -Method GET -UseBasicParsing
 $vouchers = $response.Content | ConvertFrom-Json
 Write-Host "Vales activos encontrados: $($vouchers.Count)" -ForegroundColor Yellow
 
-Write-Host "`n=== 4. Canjeando vale ===" -ForegroundColor Green
+Write-Host "`n=== 5. Canjeando vale (InUse se establece automáticamente en false) ===" -ForegroundColor Green
 $body = @{
     redemptionSaleId = 'REDEMPTION-456'
 } | ConvertTo-Json
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/RedeemCashVoucher/$code" `
+    -Method PUT -Body $body -ContentType 'application/json' -UseBasicParsing
+$response.Content | ConvertFrom-Json | Format-List
+
+Write-Host "`n=== 6. Verificando estado después del canje ===" -ForegroundColor Green
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code?onlyActives=false" `
+    -Method GET -UseBasicParsing
+$voucher = $response.Content | ConvertFrom-Json
+Write-Host "Estado final: $($voucher.Status), InUse: $($voucher.InUse)" -ForegroundColor Yellow
+$voucherhttp://localhost:5000/api/RedeemCashVoucher/$code" `
     -Method PUT -Body $body -ContentType 'application/json' -UseBasicParsing
 $response.Content | ConvertFrom-Json | Format-List
 

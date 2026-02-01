@@ -46,4 +46,12 @@ public interface ICashVoucherService
     /// <param name="request">The redemption request data</param>
     /// <returns>A list of redeemed cash voucher DTOs</returns>
     Task<List<CashVoucherDTO>> RedeemCashVoucherAsync(string code, RedeemCashVoucherRequestDTO request);
+
+    /// <summary>
+    /// Sets the InUse flag for all vouchers with the specified code
+    /// </summary>
+    /// <param name="code">The voucher code</param>
+    /// <param name="inUse">The value to set for the InUse flag</param>
+    /// <returns>A list of updated cash voucher DTOs</returns>
+    Task<List<CashVoucherDTO>> SetCashVouchersInUseAsync(string code, bool inUse);
 }

@@ -175,4 +175,79 @@ public class CashVoucherStatusTests
         // Assert
         Assert.Equal(CashVoucherStatusEnum.Redeemed, status);
     }
+
+    /// <summary>
+    /// Tests that a voucher is InUse when InUse flag is true
+    /// </summary>
+    [Fact]
+    public void Status_ShouldBeInUse_WhenInUseFlagIsTrue()
+    {
+        // Arrange
+        var voucher = new CashVoucher
+        {
+            Code = "1234567890123",
+            Amount = 50.00m,
+            CreationDate = DateTime.UtcNow,
+            IssuingStoreId = 1234,
+            RedemptionDate = null,
+            ExpirationDate = DateTime.UtcNow.AddDays(30),
+            InUse = true
+        };
+
+        // Act
+        var status = voucher.Status;
+
+        // Assert
+        Assert.Equal(CashVoucherStatusEnum.InUse, status);
+    }
+
+    /// <summary>
+    /// Tests that Redeemed status takes precedence over InUse
+    /// </summary>
+    [Fact]
+    public void Status_RedeemedTakesPrecedence_OverInUse()
+    {
+        // Arrange
+        var voucher = new CashVoucher
+        {
+            Code = "1234567890123",
+            Amount = 50.00m,
+            CreationDate = DateTime.UtcNow.AddDays(-10),
+            IssuingStoreId = 1234,
+            RedemptionDate = DateTime.UtcNow,
+            ExpirationDate = null,
+            InUse = true
+        };
+
+        // Act
+        var status = voucher.Status;
+
+        // Assert
+        Assert.Equal(CashVoucherStatusEnum.Redeemed, status);
+    }
+
+    /// <summary>
+    /// Tests that Expired status takes precedence over InUse
+    /// </summary>
+    [Fact]
+    public void Status_ExpiredTakesPrecedence_OverInUse()
+    {
+        // Arrange
+        var voucher = new CashVoucher
+        {
+            Code = "1234567890123",
+            Amount = 50.00m,
+            CreationDate = DateTime.UtcNow.AddDays(-60),
+            IssuingStoreId = 1234,
+            RedemptionDate = null,
+            ExpirationDate = DateTime.UtcNow.AddDays(-1),
+            InUse = true
+        };
+
+        // Act
+        var status = voucher.Status;
+
+        // Assert
+        Assert.Equal(CashVoucherStatusEnum.Expired, status);
+    }
 }

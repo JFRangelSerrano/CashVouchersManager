@@ -110,7 +110,7 @@ public class CashVoucherService : ICashVoucherService
         string code, 
         RedeemCashVoucherRequestDTO request)
     {
-        // Get all active vouchers with this code
+        // Get all active vouchers with this code (regardless of InUse flag)
         var activeVouchers = await _repository.GetByCodeAsync(code, onlyActives: true);
 
         if (activeVouchers.Count == 0)
@@ -125,6 +125,7 @@ public class CashVoucherService : ICashVoucherService
         {
             voucher.RedemptionDate = redemptionDate;
             voucher.RedemptionSaleId = request.RedemptionSaleId;
+            voucher.InUse = false; // Always set InUse to false after redemption
         }
 
         // Update in repository
@@ -132,6 +133,18 @@ public class CashVoucherService : ICashVoucherService
 
         // Return updated DTOs
         return activeVouchers.Select(MapToDto).ToList();
+    }
+
+    /// <summary>
+    /// Sets the InUse flag for all vouchers with the specified code
+    /// </summary>
+    /// <param name="code">The voucher code</param>
+    /// <param name="inUse">The value to set for the InUse flag</param>
+    /// <returns>A list of updated cash voucher DTOs</returns>
+    public async Task<List<CashVoucherDTO>> SetCashVouchersInUseAsync(string code, bool inUse)
+    {
+        var updatedVouchers = await _repository.SetInUseAsync(code, inUse);
+        return updatedVouchers.Select(MapToDto).ToList();
     }
 
     /// <summary>
@@ -151,6 +164,7 @@ public class CashVoucherService : ICashVoucherService
             ExpirationDate = voucher.ExpirationDate,
             IssuingSaleId = voucher.IssuingSaleId,
             RedemptionSaleId = voucher.RedemptionSaleId,
+            InUse = voucher.InUse,
             Status = voucher.Status
         };
     }

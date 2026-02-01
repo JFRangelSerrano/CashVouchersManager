@@ -130,8 +130,8 @@ public class CashVoucherRepository : ICashVoucherRepository
         // Use raw SQL because entity has no key and cannot be tracked
         await _context.Database.ExecuteSqlRawAsync(
             @"INSERT INTO CashVouchers 
-            (Code, Amount, CreationDate, IssuingStoreId, RedemptionDate, ExpirationDate, IssuingSaleId, RedemptionSaleId) 
-            VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7})",
+            (Code, Amount, CreationDate, IssuingStoreId, RedemptionDate, ExpirationDate, IssuingSaleId, RedemptionSaleId, InUse) 
+            VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})",
             cashVoucher.Code,
             cashVoucher.Amount,
             cashVoucher.CreationDate,
@@ -139,7 +139,8 @@ public class CashVoucherRepository : ICashVoucherRepository
             cashVoucher.RedemptionDate!,
             cashVoucher.ExpirationDate!,
             cashVoucher.IssuingSaleId!,
-            cashVoucher.RedemptionSaleId!);
+            cashVoucher.RedemptionSaleId!,
+            cashVoucher.InUse);
     }
 
     /// <summary>
@@ -160,8 +161,9 @@ public class CashVoucherRepository : ICashVoucherRepository
                     RedemptionDate = {3}, 
                     ExpirationDate = {4}, 
                     IssuingSaleId = {5}, 
-                    RedemptionSaleId = {6}
-                WHERE Code = {7}",
+                    RedemptionSaleId = {6},
+                    InUse = {7}
+                WHERE Code = {8}",
                 voucher.Amount,
                 voucher.CreationDate,
                 voucher.IssuingStoreId,
@@ -169,6 +171,7 @@ public class CashVoucherRepository : ICashVoucherRepository
                 voucher.ExpirationDate!,
                 voucher.IssuingSaleId!,
                 voucher.RedemptionSaleId!,
+                voucher.InUse,
                 voucher.Code);
         }
     }
@@ -195,5 +198,78 @@ public class CashVoucherRepository : ICashVoucherRepository
                 (v.ExpirationDate == null || v.ExpirationDate >= thirtyDaysAgo));
 
         return exists;
+    }
+
+    /// <summary>
+    /// Sets the InUse flag for all vouchers with the specified code
+    /// </summary>
+    /// <param name="code">The voucher code</param>
+    /// <param name="inUse">The value to set for InUse flag</param>
+    /// <returns>A list of updated cash vouchers</returns>
+    public async Task<List<CashVoucher>> SetInUseAsync(string code, bool inUse)
+    {
+        var utcNow = DateTime.UtcNow;
+
+        // Get all vouchers with the specified code (no filtering)
+        var vouchers = await _context.CashVouchers
+            .Where(v => v.Code == code)
+            .ToListAsync();
+
+        if (vouchers.Count == 0)
+            return new List<CashVoucher>();
+
+        // If setting to true, validate that vouchers can be set to InUse
+        if (inUse)
+        {
+            var invalidVouchers = vouchers.Where(v =>
+                v.RedemptionDate != null ||
+                (v.ExpirationDate != null && v.ExpirationDate < utcNow))
+                .ToList();
+
+            if (invalidVouchers.Any())
+            {
+                throw new InvalidOperationException(
+                    "Cannot set InUse=true for vouchers that are redeemed or expired");
+            }
+        }
+
+        // Use transaction for consistency
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            // Update InUse flag using raw SQL
+            await _context.Database.ExecuteSqlRawAsync(
+                @"UPDATE CashVouchers 
+                SET InUse = {0}
+                WHERE Code = {1}",
+                inUse,
+                code);
+
+            await transaction.CommitAsync();
+
+            // Reload vouchers to return updated state
+            vouchers = await _context.CashVouchers
+                .Where(v => v.Code == code)
+                .ToListAsync();
+
+            return vouchers;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gets all vouchers with the specified code without any filtering
+    /// </summary>
+    /// <param name="code">The voucher code</param>
+    /// <returns>A list of all cash vouchers matching the code</returns>
+    public async Task<List<CashVoucher>> GetAllByCodeAsync(string code)
+    {
+        return await _context.CashVouchers
+            .Where(v => v.Code == code)
+            .ToListAsync();
     }
 }

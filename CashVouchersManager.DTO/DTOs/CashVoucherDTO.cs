@@ -48,6 +48,11 @@ public class CashVoucherDTO
     public string? RedemptionSaleId { get; set; }
 
     /// <summary>
+    /// Indicates if the voucher is currently in use
+    /// </summary>
+    public bool InUse { get; set; }
+
+    /// <summary>
     /// The current status of the voucher
     /// </summary>
     public CashVoucherStatusEnum Status { get; set; }

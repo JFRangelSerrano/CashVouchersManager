@@ -51,4 +51,19 @@ public interface ICashVoucherRepository
     /// <param name="code">The voucher code to check</param>
     /// <returns>True if the code exists in active vouchers, false otherwise</returns>
     Task<bool> CodeExistsInActiveVouchersAsync(string code);
+
+    /// <summary>
+    /// Sets the InUse flag for all vouchers with the specified code
+    /// </summary>
+    /// <param name="code">The voucher code</param>
+    /// <param name="inUse">The value to set for InUse flag</param>
+    /// <returns>A list of updated cash vouchers</returns>
+    Task<List<CashVoucher>> SetInUseAsync(string code, bool inUse);
+
+    /// <summary>
+    /// Gets all vouchers with the specified code without any filtering
+    /// </summary>
+    /// <param name="code">The voucher code</param>
+    /// <returns>A list of all cash vouchers matching the code</returns>
+    Task<List<CashVoucher>> GetAllByCodeAsync(string code);
 }

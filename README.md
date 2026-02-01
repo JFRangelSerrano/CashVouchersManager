@@ -43,7 +43,7 @@ La API estará disponible en:
 
 ## Tests Unitarios
 
-El proyecto incluye 37 tests unitarios que validan todas las reglas de negocio.
+El proyecto incluye 52 tests unitarios que validan todas las reglas de negocio, incluyendo la funcionalidad de control de concurrencia con la propiedad InUse.
 
 ```bash
 # Ejecutar todos los tests
@@ -93,7 +93,7 @@ Obtiene vales filtrados por múltiples criterios.
 - `dateType` (CashVoucherDateTypeEnum, default: Creation): Creation, Redemption, o Expiration
 
 ### PUT /api/RedeemCashVoucher/{code}
-Canjea todos los vales activos con el código especificado.
+Canjea todos los vales activos con el código especificado. Al canjear un vale, se establece automáticamente InUse=false.
 
 **Request Body:**
 ```json
@@ -102,6 +102,22 @@ Canjea todos los vales activos con el código especificado.
   "redemptionSaleId": "REDEMPTION-456"
 }
 ```
+
+### POST /api/SetCashVouchersInUse/{code}
+Establece o quita la marca InUse en todos los vales con el código especificado. Se utiliza para control de concurrencia al reservar vales durante un proceso de canje.
+
+**Request Body:**
+```json
+{, InUse) se calcula en memoria con precedencia definida
+- **Control de concurrencia**: La propiedad InUse permite reservar vales durante procesos de canje, evitando condiciones de carrera
+- **Operaciones transaccionales**: Las operaciones críticas como SetInUse se ejecutan dentro de transacciones para garantizar consistenc
+  "inUse": true
+}
+```
+
+**Restricciones:**
+- No se puede establecer InUse=true en vales canjeados o expirados
+- Se puede establecer InUse=false en cualquier vale
 
 ## Características técnicas
 
@@ -121,10 +137,27 @@ Un vale es considerado **inactivo** (su código está disponible para ser reutil
 
 Al generar un nuevo vale, el sistema garantiza que el código EAN13 generado no exista en ningún vale activo.
 
-### Estados de los vales
+### Estados de los vales, con la siguiente precedencia:
+1. **Redeemed**: Ha sido canjeado (máxima precedencia)
+2. **Expired**: Ha pasado su fecha de expiración
+3. **InUse**: Está marcado como en uso para control de concurrencia
+4. **Active**: No está canjeado, no ha expirado, y no está en uso
 
-Un vale puede tener uno de estos estados calculados:
-- **Active**: No está canjeado y no ha expirado (o lleva expirado menos de 30 días)
+La precedencia significa que si un vale está canjeado, su estado será Redeemed independientemente de si está expirado o marcado como InUse.
+
+### Control de concurrencia con InUse
+
+La propiedad InUse permite implementar un mecanismo de bloqueo optimista para evitar condiciones de carrera durante el proceso de canje:
+
+1. Antes de iniciar un proceso de canje, establecer InUse=true en los vales
+2. Realizar las validaciones y operaciones necesarias
+3. Al completar el canje exitosamente, InUse se establece automáticamente en false
+4. Si el canje falla, establecer manualmente InUse=false para liberar los vales
+
+**Restricciones:**
+- No se puede establecer InUse=true en vales canjeados o expirados
+- El canje automáticamente establece InUse=false
+- La operación SetInUse es transaccional y se aplica a TODOS los vales con el mismo código (o lleva expirado menos de 30 días)
 - **Redeemed**: Ha sido canjeado
 - **Expired**: Ha pasado su fecha de expiración
 

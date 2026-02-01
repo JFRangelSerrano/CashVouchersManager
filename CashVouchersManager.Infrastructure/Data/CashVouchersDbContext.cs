@@ -70,6 +70,11 @@ public class CashVouchersDbContext : DbContext
             entity.Property(e => e.RedemptionSaleId)
                 .HasMaxLength(128);
 
+            // Configure InUse flag
+            entity.Property(e => e.InUse)
+                .IsRequired()
+                .HasDefaultValue(false);
+
             // Ignore calculated property
             entity.Ignore(e => e.Status);
         });

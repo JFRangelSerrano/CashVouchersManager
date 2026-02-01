@@ -101,6 +101,17 @@ try
     // Register background services
     builder.Services.AddHostedService<VoucherCleanupService>();
 
+    // Configure CORS to allow Swagger UI to display responses
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+    });
+
     var app = builder.Build();
 
     // Log startup information early
@@ -130,6 +141,9 @@ try
     // Configure the HTTP request pipeline
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // Enable CORS
+    app.UseCors();
 
     // Use Basic Authentication middleware
     app.UseMiddleware<BasicAuthenticationMiddleware>();

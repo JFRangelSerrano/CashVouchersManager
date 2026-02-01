@@ -12,6 +12,20 @@ Esta guía te muestra cómo desplegar **Cash Vouchers Manager API** en Railway.a
 
 ---
 
+## ✅ Archivos de Configuración Ya Incluidos
+
+Tu proyecto **ya está listo** con todos los archivos necesarios para Railway:
+
+- ✅ **nixpacks.toml** - Fuerza a Railway a usar .NET SDK 8
+- ✅ **global.json** - Especifica la versión del SDK (.NET 8.0)
+- ✅ **railway.json** - Configuración de despliegue
+- ✅ **Procfile** - Comando de inicio alternativo
+- ✅ **Endpoint DeleteAllVouchers** - Para resetear la base de datos
+
+**No necesitas crear nada más.** Solo sigue los pasos de despliegue.
+
+---
+
 ## 🔧 PASO 1: Subir el Proyecto a GitHub
 
 ### 1.1 Crear Repositorio en GitHub
@@ -34,11 +48,11 @@ Abre PowerShell en la carpeta de tu proyecto y ejecuta:
 # Inicializar repositorio Git (si no está inicializado)
 git init
 
-# Agregar todos los archivos
+# Agregar todos los archivos (incluye nixpacks.toml y global.json)
 git add .
 
 # Hacer el primer commit
-git commit -m "Initial commit: Cash Vouchers Manager API"
+git commit -m "Ready for Railway deployment with .NET 8 configuration"
 
 # Agregar el repositorio remoto (reemplaza TU-USUARIO con tu usuario de GitHub)
 git remote add origin https://github.com/TU-USUARIO/cash-vouchers-manager.git
@@ -47,6 +61,8 @@ git remote add origin https://github.com/TU-USUARIO/cash-vouchers-manager.git
 git branch -M main
 git push -u origin main
 ```
+
+**⚠️ IMPORTANTE**: Asegúrate de que `nixpacks.toml` y `global.json` estén incluidos en el commit. Estos archivos son **esenciales** para que Railway use .NET 8.
 
 **🔑 Autenticación**: GitHub te pedirá credenciales. Usa tu usuario y un **Personal Access Token** (no la contraseña):
 
@@ -297,14 +313,37 @@ Railway free tier incluye:
 
 ## 🆘 Solución de Problemas
 
+### Error: "NETSDK1045: The current .NET SDK does not support targeting .NET 8.0"
+
+**Causa**: Railway está usando .NET SDK 6 en lugar de .NET 8.
+
+**Solución** (YA IMPLEMENTADA):
+1. ✅ Tu proyecto ya incluye `nixpacks.toml` que fuerza .NET 8
+2. ✅ Tu proyecto ya incluye `global.json` que especifica .NET 8.0
+3. Haz commit de estos archivos:
+   ```powershell
+   git add nixpacks.toml global.json railway.json
+   git commit -m "Add .NET 8 configuration for Railway"
+   git push
+   ```
+4. Railway detectará el push y volverá a desplegar automáticamente
+5. Esta vez usará .NET 8 correctamente
+
+**Verificar que los archivos estén en GitHub**:
+1. Ve a tu repositorio en GitHub
+2. Busca `nixpacks.toml` en la raíz
+3. Busca `global.json` en la raíz
+4. Si no están, agrégalos y haz push de nuevo
+
 ### Error: "Build failed"
 
 **Causa**: Faltan archivos o configuración incorrecta.
 
 **Solución**:
-1. Verifica que `railway.json` esté en la raíz del repositorio
+1. Verifica que `nixpacks.toml`, `global.json` y `railway.json` estén en la raíz del repositorio
 2. Revisa los logs de build en Railway
 3. Asegúrate de que `dotnet build` funcione localmente
+4. Verifica que estés usando .NET 8 SDK localmente
 
 ### Error: "Application crashed"
 
@@ -314,6 +353,7 @@ Railway free tier incluye:
 1. Revisa los logs en Railway (pestaña Deployments)
 2. Verifica que el puerto se lea de la variable `PORT`
 3. Comprueba que las migraciones de EF Core se apliquen correctamente
+4. Asegúrate de que la variable de entorno `PORT` esté configurada (Railway lo hace automáticamente)
 
 ### La Base de Datos se Borra al Reiniciar
 

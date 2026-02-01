@@ -150,18 +150,19 @@
 
 Ya he agregado a tu proyecto:
 
+✅ **Archivos de configuración para Railway**:
+- `nixpacks.toml` - Fuerza a Railway a usar .NET SDK 8 (soluciona error NETSDK1045)
+- `global.json` - Especifica la versión del SDK (.NET 8.0)
+- `railway.json` - Configuración de despliegue
+- `Procfile` - Instrucciones de inicio alternativas
+
 ✅ **Endpoint para resetear DB**: `DELETE /api/DeleteAllVouchers`
 - Permite vaciar la base de datos cuando quieras
 - Protegido con autenticación
 - Documentado en Swagger
 
-✅ **Archivos de configuración**:
-- `railway.json` - Configuración para Railway
-- `Procfile` - Instrucciones de inicio
-- `.gitignore` actualizado
-
 ✅ **Documentación completa**:
-- `DEPLOYMENT_GUIDE.md` - Guía paso a paso para Railway
+- `DEPLOYMENT_GUIDE.md` - Guía paso a paso para Railway (incluye solución al error .NET 8)
 - `README.md` actualizado con nuevo endpoint
 
 ---

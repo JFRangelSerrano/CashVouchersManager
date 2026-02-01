@@ -73,4 +73,11 @@ public interface ICashVoucherRepository
     /// </summary>
     /// <returns>The number of vouchers deleted</returns>
     Task<int> DeleteOldVouchersAsync();
+
+    /// <summary>
+    /// Deletes all vouchers from the database
+    /// WARNING: This operation cannot be undone
+    /// </summary>
+    /// <returns>The number of vouchers deleted</returns>
+    Task<int> DeleteAllVouchersAsync();
 }

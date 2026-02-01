@@ -305,7 +305,29 @@ Content-Type: application/json
 }
 ```
 
-### 5. Sistema de Estados
+### 5. Resetear Base de Datos
+
+**Endpoint**: `DELETE /api/DeleteAllVouchers`
+
+Elimina todos los vales de la base de datos. Útil para testing y demos.
+
+**⚠️ ADVERTENCIA**: Esta operación **NO puede deshacerse**.
+
+**Ejemplo**:
+```bash
+DELETE /api/DeleteAllVouchers
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+```
+
+**Respuesta**:
+```json
+{
+  "message": "Successfully deleted 15 vouchers",
+  "deletedCount": 15
+}
+```
+
+### 6. Sistema de Estados
 
 Los vales tienen estados **calculados dinámicamente** con precedencia definida:
 
@@ -316,7 +338,7 @@ Los vales tienen estados **calculados dinámicamente** con precedencia definida:
 
 **Ejemplo**: Un vale canjeado siempre mostrará estado `Redeemed`, aunque también esté expirado o marcado como InUse.
 
-### 6. Limpieza Automática
+### 7. Limpieza Automática
 
 Un **Background Service** ejecuta diariamente la limpieza de vales antiguos:
 
@@ -330,7 +352,7 @@ Un **Background Service** ejecuta diariamente la limpieza de vales antiguos:
 - Registro completo en logs
 - Operación transaccional
 
-### 7. Reutilización de Códigos
+### 8. Reutilización de Códigos
 
 Los códigos EAN13 pueden reutilizarse bajo ciertas condiciones:
 

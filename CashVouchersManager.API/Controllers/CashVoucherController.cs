@@ -121,4 +121,17 @@ public class CashVoucherController : ControllerBase
             
         return Ok(result);
     }
+
+    /// <summary>
+    /// Deletes all vouchers from the database
+    /// WARNING: This operation cannot be undone
+    /// Use this endpoint to reset the database for testing purposes
+    /// </summary>
+    /// <returns>The number of vouchers deleted</returns>
+    [HttpDelete("DeleteAllVouchers")]
+    public async Task<ActionResult<object>> DeleteAllVouchers()
+    {
+        var deletedCount = await _cashVoucherService.DeleteAllVouchersAsync();
+        return Ok(new { message = $"Successfully deleted {deletedCount} vouchers", deletedCount });
+    }
 }

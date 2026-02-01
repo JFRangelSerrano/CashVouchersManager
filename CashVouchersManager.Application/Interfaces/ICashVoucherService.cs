@@ -54,4 +54,11 @@ public interface ICashVoucherService
     /// <param name="inUse">The value to set for the InUse flag</param>
     /// <returns>A list of updated cash voucher DTOs</returns>
     Task<List<CashVoucherDTO>> SetCashVouchersInUseAsync(string code, bool inUse);
+
+    /// <summary>
+    /// Deletes all vouchers from the database
+    /// WARNING: This operation cannot be undone
+    /// </summary>
+    /// <returns>The number of vouchers deleted</returns>
+    Task<int> DeleteAllVouchersAsync();
 }

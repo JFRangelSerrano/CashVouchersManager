@@ -148,6 +148,16 @@ public class CashVoucherService : ICashVoucherService
     }
 
     /// <summary>
+    /// Deletes all vouchers from the database
+    /// WARNING: This operation cannot be undone
+    /// </summary>
+    /// <returns>The number of vouchers deleted</returns>
+    public async Task<int> DeleteAllVouchersAsync()
+    {
+        return await _repository.DeleteAllVouchersAsync();
+    }
+
+    /// <summary>
     /// Maps a CashVoucher entity to a CashVoucherDTO
     /// </summary>
     /// <param name="voucher">The voucher entity</param>

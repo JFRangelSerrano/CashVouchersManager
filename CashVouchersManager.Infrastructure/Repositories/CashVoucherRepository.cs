@@ -297,4 +297,17 @@ public class CashVoucherRepository : ICashVoucherRepository
 
         return deletedCount;
     }
+
+    /// <summary>
+    /// Deletes all vouchers from the database
+    /// WARNING: This operation cannot be undone
+    /// </summary>
+    /// <returns>The number of vouchers deleted</returns>
+    public async Task<int> DeleteAllVouchersAsync()
+    {
+        var deletedCount = await _context.Database.ExecuteSqlRawAsync(
+            "DELETE FROM CashVouchers");
+
+        return deletedCount;
+    }
 }

@@ -2,7 +2,9 @@
 nixPkgs = ["dotnet-sdk_8"]
 
 [phases.build]
-cmds = ["dotnet restore", "dotnet build --configuration Release --no-restore"]
+cmds = [
+    "dotnet publish CashVouchersManager.API/CashVouchersManager.API.csproj -c Release -o /app/out --self-contained false --runtime linux-x64"
+]
 
-[phases.start]
-cmd = "cd CashVouchersManager.API && dotnet run --configuration Release --no-build --urls http://0.0.0.0:$PORT"
+[start]
+cmd = "cd /app/out && ./CashVouchersManager.API --urls http://0.0.0.0:$PORT"

@@ -4,6 +4,18 @@ Esta guía te muestra cómo desplegar **Cash Vouchers Manager API** en Railway.a
 
 ---
 
+## 🌐 Demo en Vivo
+
+**API ya desplegada y funcionando:**
+
+🔗 **Swagger UI**: [https://cashvouchersmanager-production.up.railway.app/swagger/index.html](https://cashvouchersmanager-production.up.railway.app/swagger/index.html)
+
+**Credenciales de prueba**:
+- Usuario: `testuser`
+- Contraseña: `testpassword`
+
+---
+
 ## 📋 Requisitos Previos
 
 1. **Cuenta de GitHub** (gratuita) - [Registrarse aquí](https://github.com/signup)

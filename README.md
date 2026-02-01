@@ -1,5 +1,17 @@
 # Cash Vouchers Manager API
 
+## 🌐 Demo en Vivo
+
+**¡Prueba la API en producción!**
+
+🔗 **Swagger UI**: [https://cashvouchersmanager-production.up.railway.app/swagger/index.html](https://cashvouchersmanager-production.up.railway.app/swagger/index.html)
+
+**Credenciales de prueba**:
+- Usuario: `testuser`
+- Contraseña: `testpassword`
+
+---
+
 ## 📋 Descripción General
 
 **Cash Vouchers Manager** es una API RESTful robusta para la gestión integral de vales canjeables por dinero. El sistema permite la generación, consulta, canje y control de vales con códigos EAN13 únicos, implementando características avanzadas como control de concurrencia, limpieza automática de registros antiguos y autenticación segura.

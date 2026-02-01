@@ -183,10 +183,15 @@ public class CashVoucherRepository : ICashVoucherRepository
         var utcNow = DateTime.UtcNow;
         var thirtyDaysAgo = utcNow.AddDays(-30);
 
-        // Active vouchers are those that are not redeemed and not expired for more than 30 days
+        // A voucher is INACTIVE if:
+        // - It is redeemed (regardless of how long it has been redeemed), OR
+        // - It has been expired for more than 30 days
+        // Therefore, a voucher is ACTIVE if:
+        // - It is NOT redeemed, AND
+        // - It is either not expired OR expired for less than 30 days
         var exists = await _context.CashVouchers
             .AnyAsync(v => v.Code == code &&
-                (v.RedemptionDate == null || v.RedemptionDate >= thirtyDaysAgo) &&
+                v.RedemptionDate == null &&
                 (v.ExpirationDate == null || v.ExpirationDate >= thirtyDaysAgo));
 
         return exists;

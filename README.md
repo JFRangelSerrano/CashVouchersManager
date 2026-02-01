@@ -43,7 +43,7 @@ La API estará disponible en:
 
 ## Tests Unitarios
 
-El proyecto incluye 52 tests unitarios que validan todas las reglas de negocio, incluyendo la funcionalidad de control de concurrencia con la propiedad InUse.
+El proyecto incluye 56 tests unitarios que validan todas las reglas de negocio, incluyendo la funcionalidad de control de concurrencia con la propiedad InUse y el servicio de limpieza automática.
 
 ```bash
 # Ejecutar todos los tests
@@ -124,8 +124,28 @@ Establece o quita la marca InUse en todos los vales con el código especificado.
 - **Entidad sin clave primaria**: La entidad CashVoucher no tiene clave primaria, lo que requiere operaciones especiales con EF Core
 - **Código EAN13**: Los códigos se generan automáticamente siguiendo el estándar EAN13
 - **Unicidad de códigos**: Se garantiza que no haya colisiones con vales activos
-- **Estados calculados**: El estado del vale (Active, Redeemed, Expired) se calcula en memoria
+- **Estados calculados**: El estado del vale (Active, Redeemed, Expired, InUse) se calcula en memoria con precedencia definida
+- **Control de concurrencia**: La propiedad InUse permite reservar vales durante procesos de canje, evitando condiciones de carrera
+- **Operaciones transaccionales**: Las operaciones críticas como SetInUse se ejecutan dentro de transacciones para garantizar consistencia
+- **Limpieza automática**: Un servicio en segundo plano elimina diariamente vales antiguos (más de 1 año)
 - **Fechas UTC**: Todas las fechas se manejan en UTC
+
+## Servicio de Limpieza Automática
+
+La aplicación incluye un servicio en segundo plano que se ejecuta diariamente y realiza limpieza automática de vales antiguos.
+
+### Criterios de eliminación
+
+El servicio elimina permanentemente vales que cumplan **alguna** de estas condiciones:
+- Vales **canjeados** con `RedemptionDate` anterior a **1 año** desde la fecha actual
+- Vales **expirados** con `ExpirationDate` anterior a **1 año** desde la fecha actual
+
+### Características del servicio
+
+- **Ejecución automática**: Se inicia al arrancar la aplicación y se ejecuta cada 24 horas
+- **Operación en segundo plano**: No interfiere con las operaciones normales de la API
+- **Registro de actividad**: Todas las ejecuciones y eliminaciones se registran en los logs
+- **Fechas en UTC**: Todas las comparaciones de fechas se realizan en UTC
 
 ## Reglas de negocio
 
@@ -137,7 +157,9 @@ Un vale es considerado **inactivo** (su código está disponible para ser reutil
 
 Al generar un nuevo vale, el sistema garantiza que el código EAN13 generado no exista en ningún vale activo.
 
-### Estados de los vales, con la siguiente precedencia:
+### Estados de los vales
+
+Un vale puede tener uno de estos estados calculados, con la siguiente precedencia:
 1. **Redeemed**: Ha sido canjeado (máxima precedencia)
 2. **Expired**: Ha pasado su fecha de expiración
 3. **InUse**: Está marcado como en uso para control de concurrencia
@@ -155,9 +177,7 @@ La propiedad InUse permite implementar un mecanismo de bloqueo optimista para ev
 4. Si el canje falla, establecer manualmente InUse=false para liberar los vales
 
 **Restricciones:**
-- No se puede establecer InUse=true en vales canjeados o expirados
-- El canje automáticamente establece InUse=false
-- La operación SetInUse es transaccional y se aplica a TODOS los vales con el mismo código (o lleva expirado menos de 30 días)
+- No se puede establecer InUse=true en vales canjeados o expiradosplica a TODOS los vales con el mismo código (o lleva expirado menos de 30 días)
 - **Redeemed**: Ha sido canjeado
 - **Expired**: Ha pasado su fecha de expiración
 

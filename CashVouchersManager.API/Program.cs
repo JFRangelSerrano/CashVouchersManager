@@ -5,6 +5,7 @@ using CashVouchersManager.Domain.Interfaces;
 using CashVouchersManager.Domain.Services;
 using CashVouchersManager.Infrastructure.Data;
 using CashVouchersManager.Infrastructure.Repositories;
+using CashVouchersManager.API.BackgroundServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,9 @@ builder.Services.AddScoped<ICashVoucherRepository, CashVoucherRepository>();
 
 // Register application services
 builder.Services.AddScoped<ICashVoucherService, CashVoucherService>();
+
+// Register background services
+builder.Services.AddHostedService<VoucherCleanupService>();
 
 var app = builder.Build();
 

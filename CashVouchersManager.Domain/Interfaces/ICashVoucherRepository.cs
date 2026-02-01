@@ -66,4 +66,11 @@ public interface ICashVoucherRepository
     /// <param name="code">The voucher code</param>
     /// <returns>A list of all cash vouchers matching the code</returns>
     Task<List<CashVoucher>> GetAllByCodeAsync(string code);
+
+    /// <summary>
+    /// Deletes old vouchers that meet the cleanup criteria
+    /// Removes redeemed vouchers older than 1 year and expired vouchers older than 1 year
+    /// </summary>
+    /// <returns>The number of vouchers deleted</returns>
+    Task<int> DeleteOldVouchersAsync();
 }

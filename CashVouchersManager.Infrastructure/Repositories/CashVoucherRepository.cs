@@ -275,4 +275,26 @@ public class CashVoucherRepository : ICashVoucherRepository
             .Where(v => v.Code == code)
             .ToListAsync();
     }
+
+    /// <summary>
+    /// Deletes old vouchers that meet the cleanup criteria
+    /// Removes redeemed vouchers older than 1 year and expired vouchers older than 1 year
+    /// </summary>
+    /// <returns>The number of vouchers deleted</returns>
+    public async Task<int> DeleteOldVouchersAsync()
+    {
+        var utcNow = DateTime.UtcNow;
+        var oneYearAgo = utcNow.AddYears(-1);
+
+        // Delete vouchers that are:
+        // - Redeemed and redemption date is older than 1 year, OR
+        // - Expired and expiration date is older than 1 year
+        var deletedCount = await _context.Database.ExecuteSqlRawAsync(
+            @"DELETE FROM CashVouchers 
+            WHERE (RedemptionDate IS NOT NULL AND RedemptionDate < {0})
+            OR (ExpirationDate IS NOT NULL AND ExpirationDate < {0})",
+            oneYearAgo);
+
+        return deletedCount;
+    }
 }

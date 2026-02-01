@@ -47,12 +47,19 @@ Los tests cubren:
 4. **CashVoucherInUseTests**: Operaciones con la propiedad InUse
    - **Establecer InUse en vales activos**
    - **Quitar InUse de vales**
-   - **Validación de que InUse no se puede establecer en vales canjeados**
-   - **Validación de que InUse no se puede establecer en vales expirados**
+   - **Filtrado automático al establecer InUse=true**
+   - **Actualización sin filtrado al establecer InUse=false**
    - **Operaciones transaccionales con múltiples vales**
    - **GetAllByCodeAsync retorna todos los vales**
 
-5. **CashVoucherServiceTests**: Lógica de aplicación
+5. **VoucherCleanupTests**: Limpieza automática de vales antiguos
+   - **Eliminación de vales canjeados con más de 1 año**
+   - **Eliminación de vales expirados con más de 1 año**
+   - **Eliminación combinada de vales antiguos**
+   - **Preservación de vales recientes**
+   - **Validación del límite exacto de 1 año**
+
+6. **CashVoucherServiceTests**: Lógica de aplicación
    - Generación de vales con códigos únicos
    - Consulta de vales por código
    - Filtrado dinámico de vales
@@ -60,7 +67,7 @@ Los tests cubren:
    - Manejo correcto de fechas UTC
    - **SetCashVouchersInUseAsync establece y quita la marca InUse**
    - **RedeemCashVoucherAsync establece InUse=false automáticamente**
-   - **Validación de excepciones al intentar establecer InUse en vales canjeados**
+   - **Filtrado por estado al establecer InUse**
 
 ## Pruebas de API
 

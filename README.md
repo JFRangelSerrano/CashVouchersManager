@@ -37,13 +37,71 @@ dotnet run
 ```
 
 La API estará disponible en:
-- http://localhost:5000
+- http://localhost:5000 (por defecto, configurable en appsettings.json)
 
 **Swagger UI** estará disponible en: http://localhost:5000/swagger
 
+## Autenticación
+
+Toda la API está protegida con **Autenticación Básica HTTP (Basic Authentication)**.
+
+### Credenciales por defecto
+
+- **Usuario**: `admin`
+- **Contraseña**: `admin123`
+
+Las credenciales se pueden configurar en el archivo `appsettings.json`:
+
+```json
+{
+  "AppSettings": {
+    "Authentication": {
+      "Username": "admin",
+      "Password": "admin123"
+    }
+  }
+}
+```
+
+### Uso de autenticación
+
+Para acceder a cualquier endpoint (excepto Swagger), debe incluir el header de autenticación:
+
+```
+Authorization: Basic YWRtaW46YWRtaW4xMjM=
+```
+
+Donde el valor es la codificación Base64 de `username:password`.
+
+## Configuración
+
+La aplicación permite configurar los siguientes aspectos desde `appsettings.json`:
+
+### Puerto de escucha
+
+```json
+{
+  "AppSettings": {
+    "Port": 5000
+  }
+}
+```
+
+### Redirección HTTPS
+
+```json
+{
+  "AppSettings": {
+    "UseHttpsRedirection": false
+  }
+}
+```
+
+**Nota**: Por defecto está deshabilitado. Activar solo si se usa con certificados SSL/TLS.
+
 ## Tests Unitarios
 
-El proyecto incluye 56 tests unitarios que validan todas las reglas de negocio, incluyendo la funcionalidad de control de concurrencia con la propiedad InUse y el servicio de limpieza automática.
+El proyecto incluye 62 tests (unitarios e integración) que validan todas las reglas de negocio, incluyendo la funcionalidad de control de concurrencia con la propiedad InUse, el servicio de limpieza automática y la autenticación básica.
 
 ```bash
 # Ejecutar todos los tests
@@ -127,6 +185,8 @@ Establece o quita la marca InUse en todos los vales con el código especificado.
 - **Estados calculados**: El estado del vale (Active, Redeemed, Expired, InUse) se calcula en memoria con precedencia definida
 - **Control de concurrencia**: La propiedad InUse permite reservar vales durante procesos de canje, evitando condiciones de carrera
 - **Operaciones transaccionales**: Las operaciones críticas como SetInUse se ejecutan dentro de transacciones para garantizar consistencia
+- **Autenticación básica HTTP**: Toda la API está protegida con autenticación básica configurable
+- **Configuración flexible**: Puerto, HTTPS y credenciales configurables desde appsettings.json
 - **Limpieza automática**: Un servicio en segundo plano elimina diariamente vales antiguos (más de 1 año)
 - **Fechas UTC**: Todas las fechas se manejan en UTC
 

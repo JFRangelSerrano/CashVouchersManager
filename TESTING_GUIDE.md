@@ -69,18 +69,51 @@ Los tests cubren:
    - **RedeemCashVoucherAsync establece InUse=false automáticamente**
    - **Filtrado por estado al establecer InUse**
 
+7. **BasicAuthenticationTests**: Tests de integración para autenticación
+   - **Solicitudes sin autenticación retornan 401**
+   - **Solicitudes con credenciales inválidas retornan 401**
+   - **Solicitudes con credenciales válidas tienen éxito**
+   - **Endpoints de Swagger no requieren autenticación**
+   - **Solicitudes POST con y sin autenticación**
+
 ## Pruebas de API
 
 ## Requisitos previos
 
 1. La API debe estar ejecutándose en http://localhost:5000
 2. Ejecutar desde PowerShell o PowerShell Core
+3. **Todas las solicitudes requieren autenticación básica HTTP**
+
+## Autenticación
+
+Todas las solicitudes a la API (excepto Swagger) requieren autenticación básica. Las credenciales por defecto son:
+- Usuario: `admin`
+- Contraseña: `admin123`
+
+### Crear credenciales para PowerShell
+
+```powershell
+# Crear credenciales Base64
+$username = 'admin'
+$password = 'admin123'
+$credentials = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${username}:${password}"))
+
+# O crear el header directamente
+$headers = @{
+    Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin123"))
+}
+```
 
 ## 1. Generar un nuevo vale
 
 Crea un vale nuevo con código EAN13 único.
 
 ```powershell
+# Configurar autenticación
+$headers = @{
+    Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin123"))
+}
+
 $body = @{
     amount = 50.00
     issuingStoreId = 1234
@@ -90,6 +123,7 @@ $body = @{
 
 $response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GenerateCashVoucher' `
     -Method POST `
+    -Headers $headers `
     -Body $body `
     -ContentType 'application/json' `
     -UseBasicParsing
@@ -120,6 +154,7 @@ $code = '1234XXXXXXXXX'
 
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code" `
     -Method GET `
+    -Headers $headers `
     -UseBasicParsing
 
 $response.Content | ConvertFrom-Json | Format-List
@@ -130,6 +165,7 @@ $response.Content | ConvertFrom-Json | Format-List
 ```powershell
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code?onlyActives=true" `
     -Method GET `
+    -Headers $headers `
     -UseBasicParsing
 
 $response.Content | ConvertFrom-Json | Format-List
@@ -140,6 +176,7 @@ $response.Content | ConvertFrom-Json | Format-List
 ```powershell
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code?onlyActives=false" `
     -Method GET `
+    -Headers $headers `
     -UseBasicParsing
 
 $response.Content | ConvertFrom-Json | Format-List
@@ -152,6 +189,7 @@ $response.Content | ConvertFrom-Json | Format-List
 ```powershell
 $response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GetFilteredCashVouchers?status=0' `
     -Method GET `
+    -Headers $headers `
     -UseBasicParsing
 
 $response.Content | ConvertFrom-Json | Format-List
@@ -162,6 +200,7 @@ $response.Content | ConvertFrom-Json | Format-List
 ```powershell
 $response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GetFilteredCashVouchers?issuingStoreId=1234' `
     -Method GET `
+    -Headers $headers `
     -UseBasicParsing
 
 $response.Content | ConvertFrom-Json | Format-List
@@ -175,6 +214,7 @@ $dateTo = '2026-12-31T23:59:59Z'
 
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetFilteredCashVouchers?dateFrom=$dateFrom&dateTo=$dateTo&dateType=0" `
     -Method GET `
+    -Headers $headers `
     -UseBasicParsing
 
 $response.Content | ConvertFrom-Json | Format-List
@@ -185,6 +225,7 @@ $response.Content | ConvertFrom-Json | Format-List
 ```powershell
 $response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GetFilteredCashVouchers?status=0&issuingStoreId=1234' `
     -Method GET `
+    -Headers $headers `
     -UseBasicParsing
 
 $response.Content | ConvertFrom-Json | Format-List
@@ -206,6 +247,7 @@ $body = @{
 
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/SetCashVouchersInUse/$code" `
     -Method POST `
+    -Headers $headers `
     -Body $body `
     -ContentType 'application/json' `
     -UseBasicParsing
@@ -231,21 +273,15 @@ $body = @{
 
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/SetCashVouchersInUse/$code" `
     -Method POST `
+    -Headers $headers `
     -Body $body `
     -ContentType 'application/json' `
-    -UseBasicPa
-- `3` = InUse
-
-**Precedencia de estados:**
-1. Redeemed (máxima precedencia)
-2. Expired
-3. InUse
-4. Activersing
+    -UseBasicParsing
 
 $response.Content | ConvertFrom-Json | Format-List
 ```
 
-**Nota:** No se puede establecer InUse=true en vales canjeados o expirados. Intentarlo resultará en un error HTTP 400.
+**Nota:** Al establecer InUse=true, solo se actualizan vales activos (no canjeados ni expirados).
 
 ## 5. Canjear vale
 
@@ -262,6 +298,7 @@ $body = @{
 
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/RedeemCashVoucher/$code" `
     -Method PUT `
+    -Headers $headers `
     -Body $body `
     -ContentType 'application/json' `
     -UseBasicParsing
@@ -280,6 +317,11 @@ $response = Invoke-WebRequest -Uri "http://localhost:5000/api/RedeemCashVoucher/
     -Method PUT `
     -Body $body `
     -ContentType 'application/json' `
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/RedeemCashVoucher/$code" `
+    -Method PUT `
+    -Headers $headers `
+    -Body $body `
+    -ContentType 'application/json' `
     -UseBasicParsing
 
 $response.Content | ConvertFrom-Json | Format-List
@@ -291,9 +333,29 @@ $response.Content | ConvertFrom-Json | Format-List
 - `0` = Active
 - `1` = Redeemed
 - `2` = Expired
+- `3` = InUse
+
+**Precedencia de estados:**
+1. Redeemed (máxima precedencia)
+2. Expired
+3. InUse
+4. Active
 
 ### CashVoucherDateTypeEnum
-- `0` = Creation con control de concurrencia InUse
+- `0` = Creation
+- `1` = Redemption
+- `2` = Expiration
+
+## Script completo de prueba
+
+```powershell
+# Script de prueba completo con autenticación y control de concurrencia InUse
+
+# Configurar autenticación
+$headers = @{
+    Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin123"))
+}
+
 Write-Host "=== 1. Generando vale ===" -ForegroundColor Green
 $body = @{
     amount = 50.00
@@ -303,7 +365,7 @@ $body = @{
 } | ConvertTo-Json
 
 $response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GenerateCashVoucher' `
-    -Method POST -Body $body -ContentType 'application/json' -UseBasicParsing
+    -Method POST -Headers $headers -Body $body -ContentType 'application/json' -UseBasicParsing
 $voucher = $response.Content | ConvertFrom-Json
 $code = $voucher.Code
 Write-Host "Vale generado con código: $code" -ForegroundColor Yellow
@@ -311,20 +373,20 @@ $voucher | Format-List
 
 Write-Host "`n=== 2. Consultando vale por código ===" -ForegroundColor Green
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code" `
-    -Method GET -UseBasicParsing
+    -Method GET -Headers $headers -UseBasicParsing
 $response.Content | ConvertFrom-Json | Format-List
 
 Write-Host "`n=== 3. Marcando vale como InUse ===" -ForegroundColor Green
 $body = @{ inUse = $true } | ConvertTo-Json
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/SetCashVouchersInUse/$code" `
-    -Method POST -Body $body -ContentType 'application/json' -UseBasicParsing
+    -Method POST -Headers $headers -Body $body -ContentType 'application/json' -UseBasicParsing
 $voucher = $response.Content | ConvertFrom-Json
 Write-Host "Estado después de SetInUse: $($voucher.Status)" -ForegroundColor Yellow
 $voucher | Format-List
 
 Write-Host "`n=== 4. Filtrando vales activos ===" -ForegroundColor Green
 $response = Invoke-WebRequest -Uri 'http://localhost:5000/api/GetFilteredCashVouchers?status=0' `
-    -Method GET -UseBasicParsing
+    -Method GET -Headers $headers -UseBasicParsing
 $vouchers = $response.Content | ConvertFrom-Json
 Write-Host "Vales activos encontrados: $($vouchers.Count)" -ForegroundColor Yellow
 
@@ -333,8 +395,16 @@ $body = @{
     redemptionSaleId = 'REDEMPTION-456'
 } | ConvertTo-Json
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/RedeemCashVoucher/$code" `
-    -Method PUT -Body $body -ContentType 'application/json' -UseBasicParsing
+    -Method PUT -Headers $headers -Body $body -ContentType 'application/json' -UseBasicParsing
 $response.Content | ConvertFrom-Json | Format-List
+
+Write-Host "`n=== 6. Verificando estado después del canje ===" -ForegroundColor Green
+$response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code?onlyActives=false" `
+    -Method GET -Headers $headers -UseBasicParsing
+$voucher = $response.Content | ConvertFrom-Json
+Write-Host "Estado final: $($voucher.Status), InUse: $($voucher.InUse)" -ForegroundColor Yellow
+$voucher | Format-List
+```
 
 Write-Host "`n=== 6. Verificando estado después del canje ===" -ForegroundColor Green
 $response = Invoke-WebRequest -Uri "http://localhost:5000/api/GetCashVoucherByCode/$code?onlyActives=false" `

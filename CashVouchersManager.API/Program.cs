@@ -6,11 +6,18 @@ using CashVouchersManager.Domain.Services;
 using CashVouchersManager.Infrastructure.Data;
 using CashVouchersManager.Infrastructure.Repositories;
 using CashVouchersManager.API.BackgroundServices;
+using CashVouchersManager.API.Configuration;
+using CashVouchersManager.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Kestrel to listen only on HTTP
-builder.WebHost.UseUrls("http://localhost:5000");
+// Configure application settings
+builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
+var appSettings = builder.Configuration.GetSection("AppSettings").Get<AppSettings>() ?? new AppSettings();
+
+// Configure Kestrel to listen on configured port
+var port = appSettings.Port;
+builder.WebHost.UseUrls($"http://localhost:{port}");
 
 // Add services to the container
 builder.Services.AddControllers();
@@ -47,8 +54,19 @@ using (var scope = app.Services.CreateScope())
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// app.UseHttpsRedirection(); // Disabled for testing
+// Use Basic Authentication middleware
+app.UseMiddleware<BasicAuthenticationMiddleware>();
+
+// Use HTTPS redirection if configured
+if (appSettings.UseHttpsRedirection)
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Make the implicit Program class public for testing
+public partial class Program { }
